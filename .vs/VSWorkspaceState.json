@@ -1,0 +1,12 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\Controllers",
+    "\\Data",
+    "\\Migrations",
+    "\\Models",
+    "\\wwwroot"
+  ],
+  "SelectedNode": "\\Models\\Quiz.cs",
+  "PreviewInSolutionExplorer": false
+}
