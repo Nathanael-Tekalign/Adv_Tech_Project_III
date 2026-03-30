@@ -1,6 +1,6 @@
 .vs/
-obj/
 bin/
+obj/
 *.db
 *.user
 FileContentIndex/

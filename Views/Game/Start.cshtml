@@ -1,0 +1,38 @@
+@model IEnumerable<TriviaGame.Models.Quiz>
+
+@{
+    ViewData["Title"] = "Start Game";
+}
+
+<h1>Start Game</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@if (!Model.Any())
+{
+    <p>No quizzes are available yet.</p>
+}
+else
+{
+    <form asp-action="CreateSession" method="post">
+        <div class="mb-3">
+            <label for="quizId" class="form-label">Choose a Quiz</label>
+            <select name="quizId" class="form-control" required>
+                @foreach (var quiz in Model)
+                {
+                    <option value="@quiz.Id">@quiz.Title</option>
+                }
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="roomCode" class="form-label">Room Code (optional)</label>
+            <input type="text" name="roomCode" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Create Session</button>
+    </form>
+}

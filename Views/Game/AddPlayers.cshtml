@@ -1,0 +1,45 @@
+@model TriviaGame.Models.GameSession
+
+@{
+    ViewData["Title"] = "Add Players";
+}
+
+<h1>Add Players</h1>
+
+<p><strong>Quiz:</strong> @Model.Quiz.Title</p>
+<p><strong>Room Code:</strong> @Model.RoomCode</p>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form asp-action="AddPlayer" method="post" class="mb-4">
+    <input type="hidden" name="sessionId" value="@Model.Id" />
+    <div class="mb-3">
+        <label for="playerName" class="form-label">Player Name</label>
+        <input type="text" name="playerName" class="form-control" required />
+    </div>
+    <button type="submit" class="btn btn-secondary">Add Player</button>
+</form>
+
+<h3>Players</h3>
+
+@if (Model.Players == null || !Model.Players.Any())
+{
+    <p>No players added yet.</p>
+}
+else
+{
+    <ul>
+        @foreach (var player in Model.Players.OrderBy(p => p.Id))
+        {
+            <li>@player.Name</li>
+        }
+    </ul>
+}
+
+<form asp-action="BeginGame" method="post">
+    <input type="hidden" name="sessionId" value="@Model.Id" />
+    <button type="submit" class="btn btn-primary">Begin Game</button>
+</form>

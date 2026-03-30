@@ -1,0 +1,35 @@
+@model IEnumerable<TriviaGame.Models.Player>
+
+@{
+    ViewData["Title"] = "Leaderboard";
+}
+
+<h1>Leaderboard</h1>
+
+<p><strong>Room Code:</strong> @ViewBag.RoomCode</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Score</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            int rank = 1;
+        }
+        @foreach (var player in Model)
+        {
+            <tr>
+                <td>@rank</td>
+                <td>@player.Name</td>
+                <td>@player.TotalScore</td>
+            </tr>
+            rank++;
+        }
+    </tbody>
+</table>
+
+<a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Back Home</a>

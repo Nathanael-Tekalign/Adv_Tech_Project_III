@@ -1,0 +1,25 @@
+@{
+    ViewData["Title"] = "Next Player";
+}
+
+<h1>Turn Complete</h1>
+
+<p>@ViewBag.CurrentPlayerName has finished their turn.</p>
+
+@if (ViewBag.NextPlayerName != null)
+{
+    <p>Next up: <strong>@ViewBag.NextPlayerName</strong></p>
+
+    <form asp-action="ConfirmNextPlayer" method="post">
+        <input type="hidden" name="sessionId" value="@ViewBag.SessionId" />
+        <button type="submit" class="btn btn-primary">Start Next Player</button>
+    </form>
+}
+else
+{
+    <p>All players are done.</p>
+
+    <a asp-action="Leaderboard" asp-route-sessionId="@ViewBag.SessionId" class="btn btn-primary">
+        View Leaderboard
+    </a>
+}

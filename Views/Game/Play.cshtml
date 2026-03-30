@@ -1,0 +1,34 @@
+@model TriviaGame.Models.Question
+
+@{
+    ViewData["Title"] = "Play";
+}
+
+<h1>Trivia Question</h1>
+
+<p><strong>Player:</strong> @ViewBag.PlayerName</p>
+<p><strong>Question:</strong> @ViewBag.QuestionNumber of @ViewBag.TotalQuestions</p>
+<p><strong>Time Limit:</strong> @Model.TimeLimitSeconds seconds</p>
+
+<form asp-action="SubmitAnswer" method="post">
+    <input type="hidden" name="sessionId" value="@ViewBag.SessionId" />
+    <input type="hidden" name="questionId" value="@Model.Id" />
+    <input type="hidden" name="timeTakenSeconds" value="0" />
+
+    <h3>@Model.QuestionText</h3>
+
+    <div>
+        <label><input type="radio" name="selectedAnswer" value="A" required /> A. @Model.AnswerA</label>
+    </div>
+    <div>
+        <label><input type="radio" name="selectedAnswer" value="B" /> B. @Model.AnswerB</label>
+    </div>
+    <div>
+        <label><input type="radio" name="selectedAnswer" value="C" /> C. @Model.AnswerC</label>
+    </div>
+    <div class="mb-3">
+        <label><input type="radio" name="selectedAnswer" value="D" /> D. @Model.AnswerD</label>
+    </div>
+
+    <button type="submit" class="btn btn-success">Submit Answer</button>
+</form>
