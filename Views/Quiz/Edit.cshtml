@@ -1,0 +1,135 @@
+@model TriviaGame.Models.Quiz
+@{
+    ViewData["Title"] = "Edit Quiz";
+}
+
+<h1>Edit Quiz</h1>
+
+@if (TempData["Success"] != null)
+{
+<div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+<div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form asp-action="Edit" method="post" style="max-width: 600px;" class="mb-4">
+    <input type="hidden" name="id" value="@Model.Id" />
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <input type="text" name="title" class="form-control" value="@Model.Title" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" rows="3">@Model.Description</textarea>
+    </div>
+    <div class="mb-3 form-check">
+        <input type="checkbox" name="isPublished" class="form-check-input"
+               value="true" @(Model.IsPublished ? "checked" : "") />
+        <label class="form-check-label">Published (visible on Start page)</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Quiz</button>
+    <a asp-action="Index" class="btn btn-secondary ms-2">Back to Quizzes</a>
+</form>
+
+<hr />
+
+<h3>Questions (@Model.Questions.Count)</h3>
+
+@if (Model.Questions.Any())
+{
+<table class="table mb-4">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Question</th>
+            <th>Correct</th>
+            <th>Points</th>
+            <th>Time</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @{int i = 1;}
+        @foreach (var q in Model.Questions)
+            {
+        <tr>
+            <td>@i</td>
+            <td>@q.QuestionText</td>
+            <td>@q.CorrectAnswer</td>
+            <td>@q.Points</td>
+            <td>@q.TimeLimitSeconds s</td>
+            <td>
+                <a asp-action="EditQuestion" asp-route-id="@q.Id"
+                   class="btn btn-sm btn-outline-primary">Edit</a>
+                <form asp-action="DeleteQuestion" method="post" style="display:inline"
+                      onsubmit="return confirm('Delete this question?')">
+                    <input type="hidden" name="id" value="@q.Id" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+                i++;
+            }
+    </tbody>
+</table>
+}
+else
+{
+<p class="text-muted">No questions yet. Add one below.</p>
+}
+
+<h4>Add Question</h4>
+
+<form asp-action="AddQuestion" method="post" style="max-width: 600px;">
+    <input type="hidden" name="quizId" value="@Model.Id" />
+    <div class="mb-3">
+        <label class="form-label">Question</label>
+        <input type="text" name="questionText" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Answer A</label>
+        <input type="text" name="answerA" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Answer B</label>
+        <input type="text" name="answerB" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Answer C</label>
+        <input type="text" name="answerC" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Answer D</label>
+        <input type="text" name="answerD" class="form-control" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Correct Answer</label>
+        <select name="correctAnswer" class="form-control" required>
+            <option value="">-- Select --</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Points</label>
+        <select name="points" class="form-control">
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="300">300</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Time Limit (seconds)</label>
+        <select name="timeLimitSeconds" class="form-control">
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20" selected>20</option>
+            <option value="30">30</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-success">Add Question</button>
+</form>

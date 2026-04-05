@@ -1,0 +1,60 @@
+@model IEnumerable<TriviaGame.Models.Quiz>
+    @{
+    ViewData["Title"] = "Manage Quizzes";
+    }
+
+    <h1>Manage Quizzes</h1>
+
+    @if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+    <a asp-action="Create" class="btn btn-primary mb-3">+ Create New Quiz</a>
+
+    @if (!Model.Any())
+{
+    <p>No quizzes yet. Create one to get started.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Questions</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var quiz in Model)
+            {
+            <tr>
+                <td>@quiz.Title</td>
+                <td>@quiz.Questions.Count</td>
+                <td>
+                    @if (quiz.IsPublished)
+                        {
+                    <span class="badge bg-success">Published</span>
+                        }
+                        else
+                        {
+                    <span class="badge bg-secondary">Draft</span>
+                        }
+                </td>
+                <td>@quiz.CreatedAt.ToString("MM/dd/yyyy")</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@quiz.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                    <form asp-action="Delete" method="post" style="display:inline"
+                          onsubmit="return confirm('Delete this quiz and all its questions?')">
+                        <input type="hidden" name="id" value="@quiz.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+}

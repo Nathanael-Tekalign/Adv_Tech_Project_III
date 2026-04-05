@@ -1,0 +1,63 @@
+@model TriviaGame.Models.Question
+@{
+    ViewData["Title"] = "Edit Question";
+}
+
+<h1>Edit Question</h1>
+
+@if (TempData["Success"] != null)
+{
+<div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<form asp-action="EditQuestion" method="post" style="max-width: 600px;">
+    <input type="hidden" name="id" value="@Model.Id" />
+    <div class="mb-3">
+        <label class="form-label">Question</label>
+        <input type="text" name="questionText" class="form-control" value="@Model.QuestionText" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Answer A</label>
+        <input type="text" name="answerA" class="form-control" value="@Model.AnswerA" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Answer B</label>
+        <input type="text" name="answerB" class="form-control" value="@Model.AnswerB" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Answer C</label>
+        <input type="text" name="answerC" class="form-control" value="@Model.AnswerC" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Answer D</label>
+        <input type="text" name="answerD" class="form-control" value="@Model.AnswerD" required />
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Correct Answer</label>
+        <select name="correctAnswer" class="form-control" required>
+            <option value="A" selected="@(Model.CorrectAnswer == "A")">A</option>
+            <option value="B" selected="@(Model.CorrectAnswer == "B")">B</option>
+            <option value="C" selected="@(Model.CorrectAnswer == "C")">C</option>
+            <option value="D" selected="@(Model.CorrectAnswer == "D")">D</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Points</label>
+        <select name="points" class="form-control">
+            <option value="100" selected="@(Model.Points == 100)">100</option>
+            <option value="200" selected="@(Model.Points == 200)">200</option>
+            <option value="300" selected="@(Model.Points == 300)">300</option>
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Time Limit (seconds)</label>
+        <select name="timeLimitSeconds" class="form-control">
+            <option value="10" selected="@(Model.TimeLimitSeconds == 10)">10</option>
+            <option value="15" selected="@(Model.TimeLimitSeconds == 15)">15</option>
+            <option value="20" selected="@(Model.TimeLimitSeconds == 20)">20</option>
+            <option value="30" selected="@(Model.TimeLimitSeconds == 30)">30</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Save Question</button>
+    <a asp-action="Edit" asp-route-id="@Model.QuizId" class="btn btn-secondary ms-2">Cancel</a>
+</form>
