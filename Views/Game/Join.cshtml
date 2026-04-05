@@ -1,0 +1,24 @@
+﻿@{
+    ViewData["Title"] = "Join Game";
+}
+
+<h1>Join Game</h1>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form asp-action="Join" method="post">
+    <div class="mb-3">
+        <label for="roomCode" class="form-label">Room Code</label>
+        <input type="text" name="roomCode" class="form-control" value="@ViewBag.RoomCode" required />
+    </div>
+
+    <div class="mb-3">
+        <label for="playerName" class="form-label">Player Name</label>
+        <input type="text" name="playerName" class="form-control" required />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Join Game</button>
+</form>

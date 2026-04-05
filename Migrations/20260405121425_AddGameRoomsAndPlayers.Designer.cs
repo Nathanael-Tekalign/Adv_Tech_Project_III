@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TriviaGame.Data;
 
@@ -10,9 +11,11 @@ using TriviaGame.Data;
 namespace TriviaGame.Migrations
 {
     [DbContext(typeof(TriviaGameContext))]
-    partial class TriviaGameContextModelSnapshot : ModelSnapshot
+    [Migration("20260405121425_AddGameRoomsAndPlayers")]
+    partial class AddGameRoomsAndPlayers
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.0");
@@ -28,9 +31,6 @@ namespace TriviaGame.Migrations
 
                     b.Property<int>("CurrentQuestionIndex")
                         .HasColumnType("INTEGER");
-
-                    b.Property<string>("QuestionOrderJson")
-                        .HasColumnType("TEXT");
 
                     b.Property<int>("QuizId")
                         .HasColumnType("INTEGER");

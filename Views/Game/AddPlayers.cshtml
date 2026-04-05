@@ -43,3 +43,26 @@ else
     <input type="hidden" name="sessionId" value="@Model.Id" />
     <button type="submit" class="btn btn-primary">Begin Game</button>
 </form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+<script>
+    const roomCode = "@Model.RoomCode";
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/triviahub")
+        .build();
+
+    connection.start().then(function () {
+        connection.invoke("JoinRoom", roomCode);
+    }).catch(function (err) {
+        console.error(err.toString());
+    });
+
+    connection.on("RefreshPlayers", function () {
+        location.reload();
+    });
+
+    connection.on("GameStarted", function () {
+        window.location.href = "/Game/Join?roomCode=@Model.RoomCode";
+    });
+</script>

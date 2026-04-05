@@ -96,4 +96,6 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
+app.MapHub<TriviaGame.Hubs.TriviaHub>("/triviahub");
+
 app.Run();

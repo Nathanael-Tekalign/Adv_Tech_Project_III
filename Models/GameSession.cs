@@ -18,6 +18,7 @@ namespace TriviaGame.Models
         public GameState State { get; set; } = GameState.Lobby;
         public int CurrentQuestionIndex { get; set; } = 0;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public string? QuestionOrderJson { get; set; }
 
         public Quiz Quiz { get; set; } = null!;
         public ICollection<Player> Players { get; set; } = new List<Player>();
