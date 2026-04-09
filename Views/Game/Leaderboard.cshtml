@@ -1,4 +1,4 @@
-@model IEnumerable<TriviaGame.Models.Player>
+﻿@model IEnumerable<TriviaGame.Models.Player>
 
 @{
     ViewData["Title"] = "Leaderboard";
@@ -14,6 +14,7 @@
             <th>Rank</th>
             <th>Player</th>
             <th>Score</th>
+            <th>Average Time</th>
         </tr>
     </thead>
     <tbody>
@@ -22,14 +23,33 @@
         }
         @foreach (var player in Model)
         {
-            <tr>
-                <td>@rank</td>
-                <td>@player.Name</td>
-                <td>@player.TotalScore</td>
-            </tr>
+            var avgTime = player.PlayerAnswers != null && player.PlayerAnswers.Any()
+                ? player.PlayerAnswers.Average(a => a.TimeTakenSeconds).ToString("F1") + "s"
+                : "N/A";
+
+            var isWinner = rank == 1;
+
+        <tr class="@(isWinner ? "table-warning fw-bold" : "")">
+            <td>
+                @if (isWinner)
+                    {
+                <span>1. Winner!</span>
+                    }
+                    else
+                    {
+                @rank
+                    }
+            </td>
+            <td>@player.Name</td>
+            <td>@player.TotalScore pts</td>
+            <td>@avgTime</td>
+        </tr>
             rank++;
         }
     </tbody>
 </table>
 
-<a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Back Home</a>
+<div class="mt-3">
+    <a asp-controller="Game" asp-action="Start" class="btn btn-primary">Play Again</a>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-secondary ms-2">Back Home</a>
+</div>

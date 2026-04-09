@@ -63,6 +63,6 @@ else
     });
 
     connection.on("GameStarted", function () {
-        window.location.href = "/Game/Join?roomCode=@Model.RoomCode";
+        window.location.href = "/Game/Play?sessionId=" + sessionId;
     });
 </script>
