@@ -1,5 +1,4 @@
 @model TriviaGame.Models.Question
-
 @{
     ViewData["Title"] = "Play";
 }
@@ -8,27 +7,70 @@
 
 <p><strong>Player:</strong> @ViewBag.PlayerName</p>
 <p><strong>Question:</strong> @ViewBag.QuestionNumber of @ViewBag.TotalQuestions</p>
-<p><strong>Time Limit:</strong> @Model.TimeLimitSeconds seconds</p>
 
-<form asp-action="SubmitAnswer" method="post">
+<div class="mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <span>Time Remaining</span>
+        <span><strong id="timerDisplay">@Model.TimeLimitSeconds</strong>s</span>
+    </div>
+    <div class="progress">
+        <div id="timerBar" class="progress-bar" style="width: 100%;"></div>
+    </div>
+</div>
+
+<form asp-action="SubmitAnswer" method="post" id="answerForm">
     <input type="hidden" name="sessionId" value="@ViewBag.SessionId" />
     <input type="hidden" name="questionId" value="@Model.Id" />
-    <input type="hidden" name="timeTakenSeconds" value="0" />
+    <input type="hidden" name="timeTakenSeconds" id="timeTakenSeconds" value="0" />
 
-    <h3>@Model.QuestionText</h3>
+    <h3 class="mb-3">@Model.QuestionText</h3>
 
-    <div>
+    <div class="mb-2">
         <label><input type="radio" name="selectedAnswer" value="A" required /> A. @Model.AnswerA</label>
     </div>
-    <div>
+    <div class="mb-2">
         <label><input type="radio" name="selectedAnswer" value="B" /> B. @Model.AnswerB</label>
     </div>
-    <div>
+    <div class="mb-2">
         <label><input type="radio" name="selectedAnswer" value="C" /> C. @Model.AnswerC</label>
     </div>
     <div class="mb-3">
         <label><input type="radio" name="selectedAnswer" value="D" /> D. @Model.AnswerD</label>
     </div>
 
-    <button type="submit" class="btn btn-success">Submit Answer</button>
+    <button type="submit" class="btn btn-success" id="submitBtn">Submit Answer</button>
 </form>
+
+@section Scripts {
+    <script>
+        const timeLimit = @Model.TimeLimitSeconds;
+        const startTime = Date.now();
+        let timerInterval;
+
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerBar = document.getElementById('timerBar');
+        const timeTakenInput = document.getElementById('timeTakenSeconds');
+        const form = document.getElementById('answerForm');
+
+        timerInterval = setInterval(() => {
+            const elapsed = (Date.now() - startTime) / 1000;
+            const remaining = Math.max(timeLimit - elapsed, 0);
+            const percent = (remaining / timeLimit) * 100;
+
+            timerDisplay.textContent = Math.ceil(remaining);
+            timerBar.style.width = percent + '%';
+
+            if (remaining <= 0) {
+                clearInterval(timerInterval);
+                timeTakenInput.value = timeLimit;
+                form.submit();
+            }
+        }, 250);
+
+        form.addEventListener('submit', function () {
+            clearInterval(timerInterval);
+            const elapsed = (Date.now() - startTime) / 1000;
+            timeTakenInput.value = Math.min(Math.round(elapsed * 10) / 10, timeLimit);
+        });
+    </script>
+}

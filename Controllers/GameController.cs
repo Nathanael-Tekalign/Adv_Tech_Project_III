@@ -126,7 +126,9 @@ namespace TriviaGame.Controllers
             _context.Players.Add(player);
             await _context.SaveChangesAsync();
 
-            await _hubContext.Clients.Group(session.RoomCode).SendAsync("RefreshPlayers");
+            // His contribution — notify connected clients a player joined
+            await _hubContext.Clients.Group(session.RoomCode)
+                .SendAsync("RefreshPlayers");
 
             return RedirectToAction(nameof(AddPlayers), new { sessionId });
         }
@@ -152,16 +154,17 @@ namespace TriviaGame.Controllers
                 return RedirectToAction(nameof(AddPlayers), new { sessionId });
             }
 
-            var questionIds = session.Quiz.Questions
-                .OrderBy(q => Guid.NewGuid())
-                .Select(q => q.Id)
-                .ToList();
-
-            if (!questionIds.Any())
+            if (!session.Quiz.Questions.Any())
             {
                 TempData["Error"] = "This quiz has no questions.";
                 return RedirectToAction(nameof(AddPlayers), new { sessionId });
             }
+
+            // His contribution — store question order in database instead of session
+            var questionIds = session.Quiz.Questions
+                .OrderBy(q => Guid.NewGuid())
+                .Select(q => q.Id)
+                .ToList();
 
             session.State = GameState.InProgress;
             session.CurrentQuestionIndex = 0;
@@ -169,91 +172,19 @@ namespace TriviaGame.Controllers
 
             await _context.SaveChangesAsync();
 
+            // His contribution — notify connected clients game started
             await _hubContext.Clients.Group(session.RoomCode)
                 .SendAsync("GameStarted", session.Id);
 
             HttpContext.Session.SetInt32("SessionId", session.Id);
+            HttpContext.Session.SetInt32("CurrentPlayerIndex", 0);
 
-           
-            return RedirectToAction(nameof(Join), new { roomCode = session.RoomCode });
-        }
-
-        [HttpGet]
-        public IActionResult Join(string? roomCode = null)
-        {
-            ViewBag.RoomCode = roomCode ?? string.Empty;
-            return View();
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Join(string roomCode, string playerName)
-        {
-            if (string.IsNullOrWhiteSpace(roomCode) || string.IsNullOrWhiteSpace(playerName))
-            {
-                TempData["Error"] = "Room code and player name are required.";
-                return RedirectToAction(nameof(Join));
-            }
-
-            string normalizedRoomCode = roomCode.Trim().ToUpper();
-            string trimmedPlayerName = playerName.Trim();
-
-            var session = await _context.GameSessions
-                .Include(gs => gs.Players)
-                .FirstOrDefaultAsync(gs => gs.RoomCode == normalizedRoomCode);
-
-            if (session == null)
-            {
-                TempData["Error"] = "Room not found.";
-                return RedirectToAction(nameof(Join));
-            }
-
-            if (session.State == GameState.Finished)
-            {
-                TempData["Error"] = "This game has already finished.";
-                return RedirectToAction(nameof(Join));
-            }
-
-            var player = session.Players
-                .FirstOrDefault(p => p.Name.ToLower() == trimmedPlayerName.ToLower());
-
-            if (player == null)
-            {
-                player = new Player
-                {
-                    GameSessionId = session.Id,
-                    Name = trimmedPlayerName,
-                    ConnectionId = string.Empty,
-                    TotalScore = 0,
-                    IsFinished = false
-                };
-
-                _context.Players.Add(player);
-                await _context.SaveChangesAsync();
-
-                await _hubContext.Clients.Group(session.RoomCode).SendAsync("RefreshPlayers");
-            }
-
-            HttpContext.Session.SetInt32("PlayerId", player.Id);
-            HttpContext.Session.SetInt32("SessionId", session.Id);
-
-            if (session.State == GameState.Lobby)
-            {
-                return RedirectToAction(nameof(AddPlayers), new { sessionId = session.Id });
-            }
-
-            return RedirectToAction(nameof(Play), new { sessionId = session.Id });
+            return RedirectToAction(nameof(Play), new { sessionId });
         }
 
         [HttpGet]
         public async Task<IActionResult> Play(int sessionId)
         {
-            int? playerId = HttpContext.Session.GetInt32("PlayerId");
-            if (playerId == null)
-            {
-                return RedirectToAction(nameof(Join));
-            }
-
             var session = await _context.GameSessions
                 .Include(gs => gs.Players)
                 .Include(gs => gs.Quiz)
@@ -264,14 +195,19 @@ namespace TriviaGame.Controllers
                 return NotFound();
             }
 
-            var currentPlayer = session.Players.FirstOrDefault(p => p.Id == playerId.Value);
-            if (currentPlayer == null)
+            var players = session.Players.OrderBy(p => p.Id).ToList();
+            int currentPlayerIndex = HttpContext.Session.GetInt32("CurrentPlayerIndex") ?? 0;
+
+            if (currentPlayerIndex >= players.Count)
             {
-                return RedirectToAction(nameof(Join), new { roomCode = session.RoomCode });
+                return RedirectToAction(nameof(Leaderboard), new { sessionId });
             }
 
-            var questionOrder = JsonSerializer.Deserialize<List<int>>(session.QuestionOrderJson ?? "[]")
-                               ?? new List<int>();
+            var currentPlayer = players[currentPlayerIndex];
+
+            // His contribution — question order stored in DB not session
+            var questionOrder = JsonSerializer.Deserialize<List<int>>(
+                session.QuestionOrderJson ?? "[]") ?? new List<int>();
 
             if (!questionOrder.Any())
             {
@@ -279,42 +215,24 @@ namespace TriviaGame.Controllers
                 return RedirectToAction(nameof(AddPlayers), new { sessionId });
             }
 
-            int currentQuestionIndex = await _context.PlayerAnswers
-                .CountAsync(pa => pa.PlayerId == currentPlayer.Id);
-
-            if (currentQuestionIndex >= questionOrder.Count)
+            if (session.CurrentQuestionIndex >= questionOrder.Count)
             {
-                if (!currentPlayer.IsFinished)
-                {
-                    currentPlayer.IsFinished = true;
-                    await _context.SaveChangesAsync();
-                }
-
-                bool allFinished = await _context.Players
-                    .Where(p => p.GameSessionId == sessionId)
-                    .AllAsync(p => p.IsFinished);
-
-                if (allFinished && session.State != GameState.Finished)
-                {
-                    session.State = GameState.Finished;
-                    await _context.SaveChangesAsync();
-                }
-
-                return RedirectToAction(nameof(Leaderboard), new { sessionId });
+                currentPlayer.IsFinished = true;
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(NextPlayer), new { sessionId });
             }
 
-            int questionId = questionOrder[currentQuestionIndex];
-
+            int questionId = questionOrder[session.CurrentQuestionIndex];
             var question = await _context.Questions.FirstOrDefaultAsync(q => q.Id == questionId);
+
             if (question == null)
             {
                 return NotFound();
             }
 
             ViewBag.SessionId = sessionId;
-            ViewBag.PlayerId = currentPlayer.Id;
             ViewBag.PlayerName = currentPlayer.Name;
-            ViewBag.QuestionNumber = currentQuestionIndex + 1;
+            ViewBag.QuestionNumber = session.CurrentQuestionIndex + 1;
             ViewBag.TotalQuestions = questionOrder.Count;
 
             return View(question);
@@ -328,12 +246,6 @@ namespace TriviaGame.Controllers
             string selectedAnswer,
             double timeTakenSeconds)
         {
-            int? playerId = HttpContext.Session.GetInt32("PlayerId");
-            if (playerId == null)
-            {
-                return RedirectToAction(nameof(Join));
-            }
-
             var session = await _context.GameSessions
                 .Include(gs => gs.Players)
                 .FirstOrDefaultAsync(gs => gs.Id == sessionId);
@@ -343,11 +255,15 @@ namespace TriviaGame.Controllers
                 return NotFound();
             }
 
-            var currentPlayer = session.Players.FirstOrDefault(p => p.Id == playerId.Value);
-            if (currentPlayer == null)
+            var players = session.Players.OrderBy(p => p.Id).ToList();
+            int currentPlayerIndex = HttpContext.Session.GetInt32("CurrentPlayerIndex") ?? 0;
+
+            if (currentPlayerIndex >= players.Count)
             {
-                return RedirectToAction(nameof(Join), new { roomCode = session.RoomCode });
+                return RedirectToAction(nameof(Leaderboard), new { sessionId });
             }
+
+            var currentPlayer = players[currentPlayerIndex];
 
             var question = await _context.Questions.FirstOrDefaultAsync(q => q.Id == questionId);
             if (question == null)
@@ -355,6 +271,7 @@ namespace TriviaGame.Controllers
                 return NotFound();
             }
 
+            // His contribution — prevent double submissions
             bool alreadyAnswered = await _context.PlayerAnswers
                 .AnyAsync(pa => pa.PlayerId == currentPlayer.Id && pa.QuestionId == question.Id);
 
@@ -382,13 +299,14 @@ namespace TriviaGame.Controllers
             };
 
             _context.PlayerAnswers.Add(playerAnswer);
+            session.CurrentQuestionIndex += 1;
             await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Play), new { sessionId });
         }
 
         [HttpGet]
-        public async Task<IActionResult> Leaderboard(int sessionId)
+        public async Task<IActionResult> NextPlayer(int sessionId)
         {
             var session = await _context.GameSessions
                 .Include(gs => gs.Players)
@@ -399,29 +317,86 @@ namespace TriviaGame.Controllers
                 return NotFound();
             }
 
-            var leaderboard = session.Players
-                .OrderByDescending(p => p.TotalScore)
-                .ThenBy(p => p.Name)
-                .ToList();
+            var players = session.Players.OrderBy(p => p.Id).ToList();
+            int currentPlayerIndex = HttpContext.Session.GetInt32("CurrentPlayerIndex") ?? 0;
 
             ViewBag.SessionId = sessionId;
-            ViewBag.RoomCode = session.RoomCode;
+            ViewBag.CurrentPlayerName = currentPlayerIndex < players.Count
+                ? players[currentPlayerIndex].Name
+                : null;
 
-            return View(leaderboard);
-        }
+            ViewBag.NextPlayerName = currentPlayerIndex + 1 < players.Count
+                ? players[currentPlayerIndex + 1].Name
+                : null;
 
-
-        [HttpGet]
-        public async Task<IActionResult> NextPlayer(int sessionId)
-        {
-            return RedirectToAction(nameof(Leaderboard), new { sessionId });
+            return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmNextPlayer(int sessionId)
         {
-            return RedirectToAction(nameof(Leaderboard), new { sessionId });
+            var session = await _context.GameSessions
+                .Include(gs => gs.Quiz)
+                .ThenInclude(q => q.Questions)
+                .Include(gs => gs.Players)
+                .FirstOrDefaultAsync(gs => gs.Id == sessionId);
+
+            if (session == null)
+            {
+                return NotFound();
+            }
+
+            int currentPlayerIndex = HttpContext.Session.GetInt32("CurrentPlayerIndex") ?? 0;
+            currentPlayerIndex++;
+
+            if (currentPlayerIndex >= session.Players.Count)
+            {
+                session.State = GameState.Finished;
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Leaderboard), new { sessionId });
+            }
+
+            HttpContext.Session.SetInt32("CurrentPlayerIndex", currentPlayerIndex);
+
+            // Randomize question order fresh for each new player
+            var newQuestionOrder = session.Quiz.Questions
+                .OrderBy(q => Guid.NewGuid())
+                .Select(q => q.Id)
+                .ToList();
+
+            session.CurrentQuestionIndex = 0;
+            session.QuestionOrderJson = JsonSerializer.Serialize(newQuestionOrder);
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Play), new { sessionId });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Leaderboard(int sessionId)
+        {
+            var session = await _context.GameSessions
+                .Include(gs => gs.Players)
+                .ThenInclude(p => p.PlayerAnswers)
+                .FirstOrDefaultAsync(gs => gs.Id == sessionId);
+
+            if (session == null)
+            {
+                return NotFound();
+            }
+
+            var leaderboard = session.Players
+                .OrderByDescending(p => p.TotalScore)
+                .ThenBy(p => p.PlayerAnswers.Any()
+                    ? p.PlayerAnswers.Average(a => a.TimeTakenSeconds)
+                    : double.MaxValue)
+                .ToList();
+
+            ViewBag.SessionId = sessionId;
+            ViewBag.RoomCode = session.RoomCode;
+
+            return View(leaderboard);
         }
     }
 }
