@@ -43,6 +43,7 @@ namespace TriviaGame.Controllers
             quiz.CreatedAt = DateTime.Now;
             quiz.IsPublished = false;
 
+            // Add Model: "Quiz.cs"
             _context.Quizzes.Add(quiz);
             await _context.SaveChangesAsync();
 
@@ -82,6 +83,7 @@ namespace TriviaGame.Controllers
                 return RedirectToAction(nameof(Edit), new { id });
             }
 
+            // Edit Model: "Quiz.cs"
             quiz.Title = title.Trim();
             quiz.Description = description?.Trim() ?? string.Empty;
             quiz.IsPublished = isPublished;
@@ -136,6 +138,7 @@ namespace TriviaGame.Controllers
                 return RedirectToAction(nameof(Edit), new { id = quizId });
             }
 
+            // Create Model "Question.cs"
             var question = new Question
             {
                 QuizId = quizId,
@@ -182,6 +185,7 @@ namespace TriviaGame.Controllers
                 return NotFound();
             }
 
+            // Edit Model "Question.cs"
             question.QuestionText = questionText.Trim();
             question.AnswerA = answerA.Trim();
             question.AnswerB = answerB.Trim();

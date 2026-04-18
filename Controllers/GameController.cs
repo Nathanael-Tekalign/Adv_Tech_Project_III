@@ -71,6 +71,8 @@ namespace TriviaGame.Controllers
         [HttpGet]
         public async Task<IActionResult> AddPlayers(int sessionId)
         {
+
+            // Game Sessions
             var session = await _context.GameSessions
                 .Include(gs => gs.Quiz)
                 .Include(gs => gs.Players)
@@ -114,6 +116,7 @@ namespace TriviaGame.Controllers
                 return RedirectToAction(nameof(AddPlayers), new { sessionId });
             }
 
+            // Create Model "Player.cs"
             var player = new Player
             {
                 GameSessionId = sessionId,
@@ -271,7 +274,6 @@ namespace TriviaGame.Controllers
                 return NotFound();
             }
 
-            // His contribution — prevent double submissions
             bool alreadyAnswered = await _context.PlayerAnswers
                 .AnyAsync(pa => pa.PlayerId == currentPlayer.Id && pa.QuestionId == question.Id);
 
@@ -288,6 +290,7 @@ namespace TriviaGame.Controllers
             int pointsAwarded = isCorrect ? question.Points : 0;
             currentPlayer.TotalScore += pointsAwarded;
 
+            // Create Model: "PlayerAnswer.cs"
             var playerAnswer = new PlayerAnswer
             {
                 PlayerId = currentPlayer.Id,
@@ -360,6 +363,7 @@ namespace TriviaGame.Controllers
             HttpContext.Session.SetInt32("CurrentPlayerIndex", currentPlayerIndex);
 
             // Randomize question order fresh for each new player
+            // // // Model "Quiz.cs"
             var newQuestionOrder = session.Quiz.Questions
                 .OrderBy(q => Guid.NewGuid())
                 .Select(q => q.Id)
@@ -386,6 +390,7 @@ namespace TriviaGame.Controllers
                 return NotFound();
             }
 
+            // Many "Player.cs"
             var leaderboard = session.Players
                 .OrderByDescending(p => p.TotalScore)
                 .ThenBy(p => p.PlayerAnswers.Any()
